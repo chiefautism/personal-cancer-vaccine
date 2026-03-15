@@ -353,7 +353,69 @@ personal-cancer-vaccine/
 - [ ] Nextflow wrapper
 - [ ] Canine genome branch (CanFam4 + DLA alleles)
 
-## References
+## How This Was Built
+
+This entire pipeline was built in one night by someone with no biology background, using Claude Code in research mode. Here is what I searched for, read, and used to put this together -- in roughly the order I encountered it.
+
+**Starting point -- the Paul Conyngham story:**
+- [AI-Designed mRNA Vaccine Shrinks Dog's Cancer Tumor](https://awesomeagents.ai/news/ai-mrna-vaccine-dog-cancer-rosie/) -- this is what started it all
+- [Tech entrepreneur uses ChatGPT to create personalised cancer vaccine for his dog](https://papalinc.com/tech-entrepreneur-uses-chatgpt-to-create-a-personalised-cancer-vaccine-for-his-dog-and-the-breakthrough-could-soon-help-humans-too/)
+- Read every article about what he actually did: sequencing, ChatGPT for planning, AlphaFold for structure, UNSW for mRNA synthesis
+
+**Learning the bioinformatics pipeline:**
+- [griffithlab pVACtools Intro Course](https://github.com/griffithlab/pVACtools_Intro_Course) -- the single most important resource. Pre-processed HCC1395 data, step-by-step tutorial, this is what Easy Mode is based on
+- [pVACtools documentation](https://pvactools.readthedocs.io/) -- how to run pVACseq, what algorithms to use, what the output means
+- [GATK Best Practices for somatic variant calling](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels) -- Mutect2 tumor-normal workflow
+- [Best practices for bioinformatic characterization of neoantigens for clinical utility](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-019-0666-2) -- Genome Medicine 2019, the definitive guide to neoantigen pipeline design
+- [OpenVax neoantigen vaccine pipeline](https://github.com/openvax/neoantigen-vaccine-pipeline) -- another open-source pipeline, used for reference
+- [ImmunoNX: bioinformatics workflow for neoantigen vaccine trials](https://pmc.ncbi.nlm.nih.gov/articles/PMC12709488/) -- 2025 paper, validated the order of our pipeline steps
+
+**Understanding the immunology:**
+- [Personalized neoantigen cancer vaccines: current progression, challenges and a bright future](https://pmc.ncbi.nlm.nih.gov/articles/PMC11427492/) -- overview of the field
+- [Advances in the development of personalized neoantigen therapies](https://rupress.org/jem/article/223/2/e20241234/278560/) -- Journal of Experimental Medicine 2025
+- [Designing neoantigen cancer vaccines, trials, and outcomes](https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1105420/full) -- Frontiers in Immunology
+
+**Clinical trial results that prove this works:**
+- [Moderna V940 KEYNOTE-942: 3-year data](https://www.merck.com/news/moderna-merck-announce-3-year-data-for-mrna-4157-v940-in-combination-with-keytruda-pembrolizumab-demonstrated-sustained-improvement-in-recurrence-free-survival-distant-metastasis-free-su/) -- 49% reduction in melanoma recurrence
+- [Moderna V940: 5-year follow-up](https://www.targetedonc.com/view/rfs-benefit-sustained-at-5-years-for-intismeran-autogene-in-melanoma) -- benefit sustained
+- [BioNTech BNT122: 3-year pancreatic cancer data](https://investors.biontech.de/news-releases/news-release-details/three-year-phase-1-follow-data-mrna-based-individualized) -- 6/8 responders disease-free
+- [Dana-Farber NeoVaxMI results](https://www.dana-farber.org/newsroom/news-releases/2025/modified-personalized-cancer-vaccine-generates-powerful-immune-response) -- 9/9 patients showed T-cell response
+- [Neoantigen DNA vaccines in triple-negative breast cancer patients](https://link.springer.com/article/10.1186/s13073-024-01388-3) -- Genome Medicine 2024
+
+**mRNA vaccine design -- how to actually build the construct:**
+- [Detailed Dissection and Critical Evaluation of the Pfizer/BioNTech and Moderna mRNA Vaccines](https://pmc.ncbi.nlm.nih.gov/articles/PMC8310186/) -- reverse-engineered BNT162b2 structure, this is where the 5'UTR, 3'UTR, and polyA design comes from
+- [Reverse Engineering the source code of the BioNTech/Pfizer SARS-CoV-2 Vaccine](https://berthub.eu/articles/posts/reverse-engineering-source-code-of-the-biontech-pfizer-vaccine/) -- Bert Hubert's legendary blog post
+- [BioNTech coronavirus vaccine patent WO2021213945A1](https://patents.google.com/patent/WO2021213945A1/en) -- actual patent with sequence details
+- [Modifications of mRNA vaccine structural elements for improving stability and translation](https://link.springer.com/article/10.1007/s13273-021-00171-4) -- why each element matters
+- [Evaluation of synthetic mRNA with selected UTR sequences and alternative poly(A) tail](https://pmc.ncbi.nlm.nih.gov/articles/PMC12355064/) -- 2025 paper on UTR optimization
+- [Poly(A) tail with loop structure enhances translation](https://www.nature.com/articles/s41541-025-01287-7) -- npj Vaccines 2025
+- [Optimized polyepitope neoantigen DNA vaccines](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-021-00872-4) -- AAY linkers, polyepitope design, furin cleavage sites
+
+**LinearDesign -- mRNA sequence optimization:**
+- [Algorithm for optimized mRNA design improves stability and immunogenicity](https://www.nature.com/articles/s41586-023-06127-z) -- Nature 2023, 128x improvement in antibody response
+- [LinearDesign GitHub](https://github.com/LinearDesignSoftware/LinearDesign) -- the actual tool
+
+**Structure prediction:**
+- [ColabFold: making protein folding accessible to all](https://www.nature.com/articles/s41592-022-01488-1) -- Nature Methods 2022
+- [AlphaFold2-Multimer for peptide-MHC complexes](https://github.com/sokrypton/ColabFold) -- how to predict peptide-MHC structures
+
+**GPU and cloud compute:**
+- [Vast.ai](https://vast.ai) -- where we ran everything
+- [ColabFold GPU VRAM requirements](https://github.com/sokrypton/ColabFold) -- ~16GB for ~400 residue complexes
+- [NVIDIA Clara Parabricks](https://www.nvidia.com/en-us/clara/parabricks/) -- GPU-accelerated variant calling (we didn't use it, CPU was fine)
+
+**Demo data:**
+- [HCC1395 on Cellosaurus](https://www.cellosaurus.org/CVCL_1249) -- triple-negative breast cancer, ~8 mut/Mb
+- [griffithlab pVACtools course data](https://github.com/griffithlab/pVACtools_Intro_Course) -- pre-processed VCF, HLA types, expression data
+- [ENA ERR194146 / ERR194147](https://www.ebi.ac.uk/ena/) -- raw FASTQ files
+
+**tPA signal peptide:**
+- [tPA signal sequence enhances immunogenicity of mRNA vaccines](https://link.springer.com/article/10.1186/s12951-024-02488-3) -- Journal of Nanobiotechnology 2024
+- [mRNA-LNP vaccines combined with tPA signal sequences](https://journals.asm.org/doi/10.1128/msphere.00775-24) -- mSphere 2024
+
+Everything above is what Claude Code searched, read, and synthesized to build this pipeline. I asked questions, it found papers, I asked more questions, it wrote code, I ran it, it broke, we fixed it. Repeat for ~12 hours.
+
+## Tool References
 
 - **pVACtools**: Hundal et al. (2020) *Cancer Immunology Research*
 - **GATK Mutect2**: Van der Auwera & O'Connor (2020) *O'Reilly*
@@ -366,4 +428,4 @@ personal-cancer-vaccine/
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT -- see [LICENSE](LICENSE).
