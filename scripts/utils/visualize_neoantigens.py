@@ -606,7 +606,7 @@ def generate_html_report(figures, data, output_path):
 </div>
 <footer>
     Personalized mRNA Cancer Vaccine Pipeline &mdash;
-    <a href="https://github.com/ADA-BOOST/llm-cure-cancer">GitHub</a>
+    <a href="https://github.com/chiefautism/personal-cancer-vaccine">GitHub</a>
 </footer>
 </body>
 </html>"""

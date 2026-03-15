@@ -174,10 +174,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 source $HOME/.local/bin/env
 
 # Clone the pipeline repo
-if [ ! -d "llm-cure-cancer" ]; then
-    git clone https://github.com/YOUR_USERNAME/llm-cure-cancer.git
+if [ ! -d "personal-cancer-vaccine" ]; then
+    git clone https://github.com/chiefautism/personal-cancer-vaccine.git
 fi
-cd llm-cure-cancer
+cd personal-cancer-vaccine
 cp .env.example .env
 
 # Install Python dependencies via uv
@@ -257,17 +257,17 @@ echo "║                                                             ║"
 echo "║  Then run the pipeline:                                     ║"
 echo "║                                                             ║"
 if [ "$MODE" = "easy" ]; then
-echo "║    cd /workspace/llm-cure-cancer                            ║"
+echo "║    cd /workspace/personal-cancer-vaccine                            ║"
 echo "║    bash easy_mode/run_easy_mode.sh                          ║"
 echo "║    uv run python scripts/utils/visualize_neoantigens.py \\   ║"
 echo "║      results/top10_neoantigens.tsv                          ║"
 elif [ "$MODE" = "structure-only" ]; then
-echo "║    cd /workspace/llm-cure-cancer                            ║"
+echo "║    cd /workspace/personal-cancer-vaccine                            ║"
 echo "║    # Upload your colabfold_input.fasta first                ║"
 echo "║    colabfold_batch input.fasta structures/ \\               ║"
 echo "║      --num-models 3 --amber --num-recycle 3                 ║"
 else
-echo "║    cd /workspace/llm-cure-cancer                            ║"
+echo "║    cd /workspace/personal-cancer-vaccine                            ║"
 echo "║    bash scripts/download_demo_data.sh                       ║"
 echo "║    bash scripts/download_references.sh                      ║"
 echo "║    bash scripts/run_pipeline.sh --mode full                 ║"

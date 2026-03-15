@@ -229,6 +229,48 @@ bash scripts/run_pipeline.sh --mode full
 
 ---
 
+## Cost Breakdown
+
+### Easy Mode (pre-processed data, neoantigen prediction only)
+
+| Resource | Cost |
+|----------|------|
+| Vast.ai RTX 5080 instance (~45 min) | $0.09 |
+| **Total** | **~$0.10** |
+
+Runs in ~20 minutes on any machine with Docker (free). Vast.ai optional for speed.
+
+### Full Mode (raw FASTQ to complete mRNA vaccine)
+
+| Step | Tool | Time | Vast.ai Cost |
+|------|------|------|-------------|
+| Download data | wget | 30 min | — |
+| Alignment | BWA-MEM | 8-10h | $0.96-1.20 |
+| Variant calling | Mutect2 | 4-6h | $0.48-0.72 |
+| HLA typing | OptiType | 15-30 min | $0.03-0.06 |
+| VEP annotation | VEP | 30-60 min | $0.06-0.12 |
+| Neoantigen prediction | pVACseq | 30-90 min | $0.06-0.18 |
+| Structure prediction | ColabFold | 2-3h | $0.24-0.36 |
+| mRNA optimization | LinearDesign | <1 min | $0.00 |
+| Construct assembly | Python | instant | $0.00 |
+| **Total** | | **~16-22h** | **$1.83-2.64** |
+
+Based on Vast.ai RTX 5080 at $0.12/hr. Actual cost of our HCC1395 run: $0.96 (8 hours including setup, debugging, and all retries).
+
+### What is NOT included in the cost
+
+The computational pipeline ends at an mRNA sequence file. The following wet-lab costs are separate and not part of this project:
+
+| Wet-lab step | Estimated cost | Who does it |
+|-------------|---------------|-------------|
+| Custom mRNA synthesis (IVT) | $500-2,000 | RNA synthesis company |
+| LNP encapsulation | $1,000-5,000 | Formulation lab |
+| Quality control | $2,000-10,000 | GMP lab |
+| Preclinical testing | $50,000+ | Research institution |
+| Clinical trial | $1M+ | Hospital / pharma |
+
+---
+
 ## Using Your Own Data
 
 1. Edit `.env` and `config/pipeline_config.yaml` with your sample names and FASTQ paths
