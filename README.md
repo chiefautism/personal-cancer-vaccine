@@ -6,6 +6,8 @@
 
 ## Why This Exists
 
+<img src="https://i1.wp.com/i.dailymail.co.uk/1s/2026/03/14/02/107127215-15644819-image-a-59_1773456851465.jpg?w=634&resize=634,476&ssl=1" width="500" alt="Paul Conyngham and Rosie">
+
 In March 2026, Paul Conyngham -- a Sydney tech entrepreneur with no biomedical degree -- used ChatGPT and AlphaFold to design a personalized mRNA cancer vaccine for his rescue dog Rosie. He paid $3,000 for genomic sequencing, used AI to identify neoantigens from the tumor mutations, and worked with Pall Thordarson at the UNSW RNA Institute to produce the actual mRNA vaccine. Rosie got her first injection in December 2025. The tumor shrank by 75%. Scientists called it the first personalized cancer vaccine ever designed for a dog.
 
 He spent 3 months writing a 100-page ethics application just to get permission to treat his own pet. He spent two hours every night after work. He had no background in biology.
