@@ -1,12 +1,29 @@
 # Personal Cancer Vaccine Pipeline
 
-> **DISCLAIMER: This is a research and educational project. It is NOT a medical product, NOT clinically validated, and NOT approved for use in humans or animals. This pipeline produces computational predictions only — it does not manufacture, test, or administer any vaccine. Do not use this software to make medical decisions. Any therapeutic application requires extensive wet-lab validation, preclinical testing, regulatory approval, and clinical oversight by qualified medical professionals. The authors assume no liability for any use of this software.**
+> **DISCLAIMER: This is a research and educational project. It is NOT a medical product, NOT clinically validated, and NOT approved for use in humans or animals. This pipeline produces computational predictions only -- it does not manufacture, test, or administer any vaccine. Do not use this software to make medical decisions. Any therapeutic application requires extensive wet-lab validation, preclinical testing, regulatory approval, and clinical oversight by qualified medical professionals. The authors assume no liability for any use of this software.**
+
+---
+
+## Why This Exists
+
+In March 2026, Paul Conyngham -- a Sydney tech entrepreneur with no biomedical degree -- used ChatGPT and AlphaFold to design a personalized mRNA cancer vaccine for his rescue dog Rosie. He paid $3,000 for genomic sequencing, used AI to identify neoantigens from the tumor mutations, and worked with Pall Thordarson at the UNSW RNA Institute to produce the actual mRNA vaccine. Rosie got her first injection in December 2025. The tumor shrank by 75%. Scientists called it the first personalized cancer vaccine ever designed for a dog.
+
+He spent 3 months writing a 100-page ethics application just to get permission to treat his own pet. He spent two hours every night after work. He had no background in biology.
+
+That story made me stay up all night asking Claude Code questions, running searches, reading papers, and building this pipeline from scratch. If one person with ChatGPT and determination can do this for a dog, what happens when you make the entire computational pipeline open-source, reproducible, and runnable for $1 on a rented GPU?
+
+This repo is the answer. Everything from raw tumor DNA to a ready-to-synthesize mRNA vaccine sequence, automated and documented.
+
+Sources on Paul Conyngham and Rosie:
+- [AI-Designed mRNA Vaccine Shrinks Dog's Cancer Tumor](https://awesomeagents.ai/news/ai-mrna-vaccine-dog-cancer-rosie/)
+- [Tech entrepreneur uses ChatGPT to create personalised cancer vaccine for his dog](https://papalinc.com/tech-entrepreneur-uses-chatgpt-to-create-a-personalised-cancer-vaccine-for-his-dog-and-the-breakthrough-could-soon-help-humans-too/)
+- [Rescue dog Rosie's cancer shrinks after world-first mRNA vaccine](https://tildes.net/~health/1t7r/rescue_dog_rosies_cancer_shrinks_after_world_first_mrna_vaccine)
 
 ---
 
 End-to-end computational pipeline: from raw tumor sequencing data to a ready-to-synthesize personalized mRNA cancer vaccine sequence.
 
-Identifies tumor-specific neoantigens, predicts 3D peptide-MHC structures with AlphaFold2, and designs an optimized mRNA construct using LinearDesign — the same approach used by BioNTech and Moderna in clinical trials.
+Identifies tumor-specific neoantigens, predicts 3D peptide-MHC structures with AlphaFold2, and designs an optimized mRNA construct using LinearDesign -- the same computational approach used by BioNTech and Moderna in clinical trials.
 
 **Tested on HCC1395 (triple-negative breast cancer). Total compute cost: ~$1 on Vast.ai.**
 
