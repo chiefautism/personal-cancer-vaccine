@@ -1,0 +1,81 @@
+version: "3.8"
+
+# Personalized mRNA Cancer Vaccine — Neoantigen Prediction Pipeline
+# Usage:
+#   docker compose --profile easy run pvacseq
+#   docker compose --profile full up
+
+x-common: &common
+  platform: linux/amd64
+  working_dir: /workspace
+  volumes:
+    - ../data:/data
+    - ../results:/results
+    - ../references:/references
+    - ../config:/config
+
+services:
+  # ── Step 1: BWA-MEM alignment ──
+  alignment:
+    <<: *common
+    image: biocontainers/bwa:v0.7.17_cv1
+    profiles: ["full"]
+    entrypoint: /bin/bash
+    command: /scripts/01_alignment.sh
+    volumes:
+      - ../data:/data
+      - ../results:/results
+      - ../references:/references
+      - ../scripts:/scripts
+
+  # ── Step 2: GATK Mutect2 variant calling ──
+  variant-calling:
+    <<: *common
+    image: broadinstitute/gatk:4.6.1.0
+    profiles: ["full"]
+    entrypoint: /bin/bash
+    command: /scripts/02_variant_calling.sh
+    volumes:
+      - ../data:/data
+      - ../results:/results
+      - ../references:/references
+      - ../scripts:/scripts
+
+  # ── Step 3: OptiType HLA typing ──
+  hla-typing:
+    <<: *common
+    image: fred2/optitype:latest
+    profiles: ["full"]
+    entrypoint: /bin/bash
+    command: /scripts/03_hla_typing.sh
+    volumes:
+      - ../data:/data
+      - ../results:/results
+      - ../scripts:/scripts
+
+  # ── Step 4: VEP annotation ──
+  vep:
+    <<: *common
+    image: ensemblorg/ensembl-vep:release_113.0
+    profiles: ["full"]
+    entrypoint: /bin/bash
+    command: /scripts/04_vep_annotation.sh
+    volumes:
+      - ../data:/data
+      - ../results:/results
+      - ../references:/references
+      - ../scripts:/scripts
+
+  # ── Step 5: pVACseq neoantigen prediction ──
+  pvacseq:
+    <<: *common
+    image: griffithlab/pvactools:6.1.0
+    profiles: ["full", "easy"]
+    entrypoint: /bin/bash
+    command: /scripts/05_pvacseq.sh
+    volumes:
+      - ../data:/data
+      - ../results:/results
+      - ../references:/references
+      - ../config:/config
+      - ../scripts:/scripts

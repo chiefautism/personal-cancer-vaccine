@@ -1,0 +1,53 @@
+# =============================================================================
+# Personalized mRNA Cancer Vaccine — Neoantigen Prediction Pipeline Config
+# =============================================================================
+
+# Sample information
+sample:
+  tumor_name: HCC1395_TUMOR_DNA
+  normal_name: HCC1395_NORMAL_DNA
+  tumor_fastq_r1: data/fastq/ERR194146_1.fastq.gz
+  tumor_fastq_r2: data/fastq/ERR194146_2.fastq.gz
+  normal_fastq_r1: data/fastq/ERR194147_1.fastq.gz
+  normal_fastq_r2: data/fastq/ERR194147_2.fastq.gz
+
+# Genome build
+genome:
+  build: GRCh38
+  reference_fasta: references/Homo_sapiens_assembly38.fasta
+  dbsnp: references/Homo_sapiens_assembly38.dbsnp138.vcf
+  gnomad: references/af-only-gnomad.hg38.vcf.gz
+  panel_of_normals: references/1000g_pon.hg38.vcf.gz
+  protein_fasta: references/Homo_sapiens.GRCh38.pep.all.fa.gz
+
+# HLA alleles (known for HCC1395 — OptiType should recover these)
+hla:
+  class_i:
+    - HLA-A*29:02
+    - HLA-B*08:01
+    - HLA-B*45:01
+    - HLA-C*06:02
+    - HLA-C*07:01
+  class_ii:
+    - DQA1*03:03
+    - DQB1*03:02
+    - DRB1*04:05
+
+# pVACseq prediction settings
+prediction:
+  algorithms:
+    - MHCflurryEL
+    - NetMHCpanEL
+    - BigMHC_EL
+  epitope_lengths: [8, 9, 10, 11]
+  binding_threshold: 500
+  percentile_threshold: 2
+  top_n_neoantigens: 10
+  pass_only: true
+  run_reference_proteome_similarity: true
+  problematic_amino_acids: C
+
+# Resource limits
+resources:
+  threads: 4
+  memory_gb: 16

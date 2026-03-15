@@ -1,0 +1,8 @@
+# HCC1395 HLA Class I alleles
+# Source: Cellosaurus (PMID:25960936, PMID:26589293)
+# HLA-A*29:02 is homozygous
+HLA-A*29:02
+HLA-B*08:01
+HLA-B*45:01
+HLA-C*06:02
+HLA-C*07:01

@@ -1,0 +1,19 @@
+[project]
+name = "llm-cure-cancer"
+version = "0.1.0"
+description = "Personalized mRNA cancer vaccine — neoantigen prediction pipeline"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+]
+
+[project.optional-dependencies]
+colabfold = [
+    "colabfold[alphafold]",
+]
+
+[tool.uv]
+dev-dependencies = []

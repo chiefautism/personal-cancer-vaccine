@@ -1,0 +1,30 @@
+# Prediction algorithms for pVACseq
+# Uncomment additional algorithms for more comprehensive (but slower) runs
+# Use "all_class_i" shortcut to run all available Class I algorithms
+
+# --- Recommended defaults (EL = eluted ligand, best performance) ---
+MHCflurryEL
+NetMHCpanEL
+BigMHC_EL
+
+# --- Additional Class I algorithms ---
+# MHCflurry
+# MHCnuggetsI
+# NetMHC
+# NetMHCcons
+# NetMHCpan
+# PickPocket
+# SMM
+# SMMPMBEC
+# BigMHC_IM
+
+# --- Class II algorithms (for DRB/DQ/DP alleles) ---
+# MHCnuggetsII
+# NetMHCIIpan
+# NNalign
+# SMMalign
+# NetMHCIIpanEL
+
+# --- Shortcut to run all ---
+# all_class_i
+# all_class_ii
