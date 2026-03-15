@@ -63,9 +63,9 @@ Identifies tumor-specific neoantigens, predicts 3D peptide-MHC structures with A
 
 ### Step 1 -- DNA Sequencing
 
-Everything starts with two DNA samples: one from the **tumor** and one from **healthy tissue** (matched normal). Both are sequenced using whole-exome or whole-genome sequencing, producing raw FASTQ files -- billions of short DNA reads.
+Everything starts with two DNA samples: one from the **tumor** and one from **healthy tissue** (matched normal). Both are sequenced using [whole-exome or whole-genome sequencing](https://www.genome.gov/genetics-glossary/Whole-Genome-Sequencing), producing raw [FASTQ files](https://en.wikipedia.org/wiki/FASTQ_format) -- billions of short DNA reads.
 
-For this demo we use **HCC1395**, a publicly available triple-negative breast cancer cell line, with its matched normal **HCC1395BL**. Data is on ENA (ERR194146, ERR194147).
+For this demo we use [**HCC1395**](https://www.cellosaurus.org/CVCL_1249), a publicly available triple-negative breast cancer cell line, with its matched normal **HCC1395BL**. Data is on [ENA](https://www.ebi.ac.uk/ena/browser/view/ERR194146) (ERR194146, ERR194147).
 
 ```
 Tumor sample:  HCC1395      (~8 mutations per megabase)
@@ -75,7 +75,7 @@ Genome build:  GRCh38 (hg38)
 
 ### Step 2 -- Read Alignment (BWA-MEM)
 
-Raw sequencing reads are aligned to the human reference genome (GRCh38) using **BWA-MEM**. This maps each short DNA fragment to its position in the genome. After alignment, duplicates are marked (GATK MarkDuplicates) and base quality scores are recalibrated (BQSR).
+Raw sequencing reads are aligned to the [human reference genome (GRCh38)](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001405.26/) using [**BWA-MEM**](https://github.com/lh3/bwa) ([paper](https://arxiv.org/abs/1303.3997)). This maps each short DNA fragment to its position in the genome. After alignment, duplicates are marked ([GATK MarkDuplicates](https://gatk.broadinstitute.org/hc/en-us/articles/360037052812-MarkDuplicates-Picard)) and base quality scores are recalibrated ([BQSR](https://gatk.broadinstitute.org/hc/en-us/articles/360035890531-Base-Quality-Score-Recalibration-BQSR)).
 
 ```bash
 bash scripts/01_alignment.sh
@@ -85,9 +85,9 @@ bash scripts/01_alignment.sh
 
 ### Step 3 -- Finding Mutations (GATK Mutect2)
 
-**GATK Mutect2** compares the tumor BAM against the normal BAM to find **somatic mutations** -- changes in DNA that exist only in the cancer cells, not in healthy tissue. These are the mutations that drive the cancer and can serve as vaccine targets.
+[**GATK Mutect2**](https://gatk.broadinstitute.org/hc/en-us/articles/360037593851-Mutect2) ([tutorial](https://gatk.broadinstitute.org/hc/en-us/articles/360035531132--How-to-Call-somatic-mutations-using-GATK4-Mutect2)) compares the tumor BAM against the normal BAM to find [**somatic mutations**](https://en.wikipedia.org/wiki/Somatic_mutation) -- changes in DNA that exist only in the cancer cells, not in healthy tissue. These are the mutations that drive the cancer and can serve as vaccine targets.
 
-The pipeline filters for high-confidence variants using contamination estimation, orientation bias filtering, and a panel of normals.
+The pipeline filters for high-confidence variants using [contamination estimation](https://gatk.broadinstitute.org/hc/en-us/articles/360036888972-CalculateContamination), orientation bias filtering, and a [panel of normals](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON).
 
 ```bash
 bash scripts/02_variant_calling.sh
@@ -97,9 +97,9 @@ bash scripts/02_variant_calling.sh
 
 ### Step 4 -- HLA Typing (OptiType)
 
-Every person's immune system uses **HLA molecules** (Human Leukocyte Antigen) to present peptide fragments on cell surfaces. T cells scan these peptides -- if they recognize a foreign peptide (like one from a mutation), they kill the cell.
+Every person's immune system uses [**HLA molecules**](https://en.wikipedia.org/wiki/Human_leukocyte_antigen) (Human Leukocyte Antigen) to present peptide fragments on cell surfaces. [T cells](https://en.wikipedia.org/wiki/T_cell) scan these peptides -- if they recognize a foreign peptide (like one from a mutation), they kill the cell.
 
-**OptiType** determines the patient's HLA type from the sequencing data. This is critical because a peptide that binds strongly to one person's HLA may not bind at all to another's.
+[**OptiType**](https://github.com/FRED-2/OptiType) ([paper](https://academic.oup.com/bioinformatics/article/30/23/3310/206261)) determines the patient's HLA type from the sequencing data. This is critical because a peptide that binds strongly to one person's HLA may not bind at all to another's.
 
 ```bash
 bash scripts/03_hla_typing.sh
@@ -114,7 +114,7 @@ bash scripts/03_hla_typing.sh
 
 ### Step 5 -- Variant Annotation (VEP)
 
-**Ensembl VEP** (Variant Effect Predictor) annotates each mutation with its effect on proteins -- is it a missense mutation? Does it change an amino acid? Which gene and transcript does it affect? The Frameshift and Wildtype plugins are added because pVACseq needs them.
+[**Ensembl VEP**](https://www.ensembl.org/info/docs/tools/vep/index.html) (Variant Effect Predictor) ([paper](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0974-4)) annotates each mutation with its effect on proteins -- is it a [missense mutation](https://en.wikipedia.org/wiki/Missense_mutation)? Does it change an amino acid? Which gene and transcript does it affect? The [Frameshift](https://pvactools.readthedocs.io/en/latest/pvacseq/input_file_prep/vep.html) and Wildtype plugins are added because pVACseq needs them.
 
 ```bash
 bash scripts/04_vep_annotation.sh
@@ -122,10 +122,10 @@ bash scripts/04_vep_annotation.sh
 
 ### Step 6 -- Neoantigen Prediction (pVACseq)
 
-This is the core step. **pVACseq** takes the annotated mutations + HLA alleles and predicts which mutant peptides will bind strongly to the patient's MHC molecules. It runs two prediction algorithms:
+This is the core step. [**pVACseq**](https://pvactools.readthedocs.io/en/latest/pvacseq.html) ([paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC7056579/), [GitHub](https://github.com/griffithlab/pVACtools)) takes the annotated mutations + HLA alleles and predicts which mutant peptides will bind strongly to the patient's [MHC molecules](https://en.wikipedia.org/wiki/Major_histocompatibility_complex). It runs two prediction algorithms:
 
-- **NetMHCpanEL** -- eluted ligand predictor, the gold standard
-- **BigMHC_EL** -- deep learning-based predictor
+- [**NetMHCpanEL**](https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/) -- eluted ligand predictor, the gold standard ([paper](https://academic.oup.com/nar/article/48/W1/W449/5837056))
+- [**BigMHC_EL**](https://github.com/KarchinLab/bigmhc) -- deep learning-based predictor ([paper](https://www.cell.com/cell-systems/fulltext/S2405-4712(23)00336-7))
 
 The pipeline tests all peptide lengths (8-11 amino acids) against all 5 HLA alleles, generating **29,031 peptide-MHC binding predictions**. These are filtered by binding percentile, and the top candidates are ranked.
 
@@ -155,7 +155,7 @@ bash scripts/05_pvacseq.sh
 
 ### Step 7 -- 3D Structure Prediction (ColabFold / AlphaFold2)
 
-For each neoantigen, **ColabFold** (AlphaFold2-Multimer) predicts the 3D structure of the peptide-MHC complex -- how the mutant peptide physically sits in the MHC binding groove. This validates that the peptide actually fits.
+For each neoantigen, [**ColabFold**](https://github.com/sokrypton/ColabFold) ([paper](https://www.nature.com/articles/s41592-022-01488-1)) runs [AlphaFold2-Multimer](https://www.deepmind.com/blog/alphafold-reveals-the-structure-of-the-protein-universe) to predict the 3D structure of the peptide-MHC complex -- how the mutant peptide physically sits in the [MHC binding groove](https://en.wikipedia.org/wiki/MHC_class_I#Structure). This validates that the peptide actually fits. See also: [Accurate modeling of peptide-MHC structures with AlphaFold](https://pmc.ncbi.nlm.nih.gov/articles/PMC10028922/).
 
 Each complex has 3 chains:
 - **Chain A:** HLA alpha chain (~275 residues)
@@ -182,9 +182,9 @@ We predicted all 9 complexes on Vast.ai (RTX 5080, ~3 hours, ~$0.36):
 
 ### Step 8 -- mRNA Vaccine Design (LinearDesign)
 
-Now we have validated neoantigens. **LinearDesign** (Nature, 2023) optimizes the mRNA coding sequence for maximum structural stability and translation efficiency, using lattice parsing from computational linguistics.
+Now we have validated neoantigens. [**LinearDesign**](https://github.com/LinearDesignSoftware/LinearDesign) ([Nature, 2023](https://www.nature.com/articles/s41586-023-06127-z)) optimizes the mRNA coding sequence for maximum structural stability and translation efficiency, using [lattice parsing](https://en.wikipedia.org/wiki/CYK_algorithm) from computational linguistics. It achieved [128x improvement in antibody response](https://www.eurekalert.org/news-releases/987999) compared to standard codon optimization.
 
-The pipeline assembles a complete mRNA construct following the architecture of BioNTech's BNT162b2 COVID-19 vaccine:
+The pipeline assembles a complete mRNA construct following the architecture of BioNTech's [BNT162b2 COVID-19 vaccine](https://pmc.ncbi.nlm.nih.gov/articles/PMC8310186/) ([reverse-engineered here](https://berthub.eu/articles/posts/reverse-engineering-source-code-of-the-biontech-pfizer-vaccine/)):
 
 ```
 5'cap -- 5'UTR (a-globin) -- Kozak -- tPA signal -- [TLN2-AAY-TRPM7-AAY-...-ZNF548] -- Stop -- 3'UTR (AES+mtRNR1) -- polyA (A30-linker-A70)
@@ -213,11 +213,11 @@ bash scripts/07_construct_design.sh
 
 ### Step 9 -- Delivery (LNP Encapsulation)
 
-The final mRNA sequence is ready for **in-vitro transcription** (IVT). During IVT:
-- All U nucleotides are replaced with **N1-methylpseudouridine** to reduce innate immune activation
-- **Cap1** structure is added co-transcriptionally
+The final mRNA sequence is ready for [**in-vitro transcription**](https://en.wikipedia.org/wiki/In_vitro_transcription) (IVT). During IVT:
+- All U nucleotides are replaced with [**N1-methylpseudouridine**](https://en.wikipedia.org/wiki/N1-Methylpseudouridine) to reduce innate immune activation ([Kariko et al., 2008](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2775451/))
+- [**Cap1**](https://en.wikipedia.org/wiki/Five-prime_cap) structure is added co-transcriptionally
 
-The mRNA is then encapsulated in a **lipid nanoparticle** (LNP) for delivery -- the same technology used in Moderna and Pfizer COVID-19 vaccines.
+The mRNA is then encapsulated in a [**lipid nanoparticle**](https://en.wikipedia.org/wiki/Solid_lipid_nanoparticle) (LNP) for delivery -- the same technology used in [Moderna](https://en.wikipedia.org/wiki/Moderna_COVID-19_vaccine) and [Pfizer](https://en.wikipedia.org/wiki/Pfizer%E2%80%93BioNTech_COVID-19_vaccine) COVID-19 vaccines.
 
 > **This step is done in a wet lab, not computationally.** The pipeline ends here with a ready-to-synthesize mRNA sequence. See [docs/WHAT_NEXT.md](docs/WHAT_NEXT.md) for detailed wet-lab next steps.
 
