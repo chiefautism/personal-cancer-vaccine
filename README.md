@@ -4,6 +4,32 @@
 
 ---
 
+## Table of Contents
+
+- [Why This Exists](#why-this-exists)
+- [How It Works: 9 Steps from Tumor DNA to Vaccine](#how-it-works-9-steps-from-tumor-dna-to-vaccine)
+  - [Step 1 -- DNA Sequencing](#step-1--dna-sequencing)
+  - [Step 2 -- Read Alignment (BWA-MEM)](#step-2--read-alignment-bwa-mem)
+  - [Step 3 -- Finding Mutations (GATK Mutect2)](#step-3--finding-mutations-gatk-mutect2)
+  - [Step 4 -- HLA Typing (OptiType)](#step-4--hla-typing-optitype)
+  - [Step 5 -- Variant Annotation (VEP)](#step-5--variant-annotation-vep)
+  - [Step 6 -- Neoantigen Prediction (pVACseq)](#step-6--neoantigen-prediction-pvacseq)
+  - [Step 7 -- 3D Structure Prediction (ColabFold)](#step-7--3d-structure-prediction-colabfold--alphafold2)
+  - [Step 8 -- mRNA Vaccine Design (LinearDesign)](#step-8--mrna-vaccine-design-lineardesign)
+  - [Step 9 -- Delivery (LNP Encapsulation)](#step-9--delivery-lnp-encapsulation)
+- [Visualizations](#visualizations)
+- [Quick Start](#quick-start)
+- [Cost Breakdown](#cost-breakdown)
+- [Using Your Own Data](#using-your-own-data)
+- [Clinical Context](#clinical-context)
+- [Project Structure](#project-structure)
+- [TODO](#todo)
+- [How This Was Built](#how-this-was-built)
+- [Tool References](#tool-references)
+- [License](#license)
+
+---
+
 ## Why This Exists
 
 <img src="https://i1.wp.com/i.dailymail.co.uk/1s/2026/03/14/02/107127215-15644819-image-a-59_1773456851465.jpg?w=634&resize=634,476&ssl=1" width="500" alt="Paul Conyngham and Rosie">
@@ -35,9 +61,9 @@ Identifies tumor-specific neoantigens, predicts 3D peptide-MHC structures with A
 
 ## How It Works: 9 Steps from Tumor DNA to Vaccine
 
-### Step 1 — DNA Sequencing
+### Step 1 -- DNA Sequencing
 
-Everything starts with two DNA samples: one from the **tumor** and one from **healthy tissue** (matched normal). Both are sequenced using whole-exome or whole-genome sequencing, producing raw FASTQ files — billions of short DNA reads.
+Everything starts with two DNA samples: one from the **tumor** and one from **healthy tissue** (matched normal). Both are sequenced using whole-exome or whole-genome sequencing, producing raw FASTQ files -- billions of short DNA reads.
 
 For this demo we use **HCC1395**, a publicly available triple-negative breast cancer cell line, with its matched normal **HCC1395BL**. Data is on ENA (ERR194146, ERR194147).
 
@@ -47,20 +73,19 @@ Normal sample: HCC1395BL    (matched blood-derived normal)
 Genome build:  GRCh38 (hg38)
 ```
 
-### Step 2 — Read Alignment (BWA-MEM)
+### Step 2 -- Read Alignment (BWA-MEM)
 
 Raw sequencing reads are aligned to the human reference genome (GRCh38) using **BWA-MEM**. This maps each short DNA fragment to its position in the genome. After alignment, duplicates are marked (GATK MarkDuplicates) and base quality scores are recalibrated (BQSR).
 
 ```bash
-# Runs via Docker — no local installation needed
 bash scripts/01_alignment.sh
 ```
 
 **Output:** sorted, deduplicated BAM files for tumor and normal.
 
-### Step 3 — Finding Mutations (GATK Mutect2)
+### Step 3 -- Finding Mutations (GATK Mutect2)
 
-**GATK Mutect2** compares the tumor BAM against the normal BAM to find **somatic mutations** — changes in DNA that exist only in the cancer cells, not in healthy tissue. These are the mutations that drive the cancer and can serve as vaccine targets.
+**GATK Mutect2** compares the tumor BAM against the normal BAM to find **somatic mutations** -- changes in DNA that exist only in the cancer cells, not in healthy tissue. These are the mutations that drive the cancer and can serve as vaccine targets.
 
 The pipeline filters for high-confidence variants using contamination estimation, orientation bias filtering, and a panel of normals.
 
@@ -70,9 +95,9 @@ bash scripts/02_variant_calling.sh
 
 **Result: 879 somatic mutations** found in HCC1395.
 
-### Step 4 — HLA Typing (OptiType)
+### Step 4 -- HLA Typing (OptiType)
 
-Every person's immune system uses **HLA molecules** (Human Leukocyte Antigen) to present peptide fragments on cell surfaces. T cells scan these peptides — if they recognize a foreign peptide (like one from a mutation), they kill the cell.
+Every person's immune system uses **HLA molecules** (Human Leukocyte Antigen) to present peptide fragments on cell surfaces. T cells scan these peptides -- if they recognize a foreign peptide (like one from a mutation), they kill the cell.
 
 **OptiType** determines the patient's HLA type from the sequencing data. This is critical because a peptide that binds strongly to one person's HLA may not bind at all to another's.
 
@@ -87,20 +112,20 @@ bash scripts/03_hla_typing.sh
 | HLA-B | B\*08:01 | B\*45:01 |
 | HLA-C | C\*06:02 | C\*07:01 |
 
-### Step 5 — Variant Annotation (VEP)
+### Step 5 -- Variant Annotation (VEP)
 
-**Ensembl VEP** (Variant Effect Predictor) annotates each mutation with its effect on proteins — is it a missense mutation? Does it change an amino acid? Which gene and transcript does it affect? The Frameshift and Wildtype plugins are added because pVACseq needs them.
+**Ensembl VEP** (Variant Effect Predictor) annotates each mutation with its effect on proteins -- is it a missense mutation? Does it change an amino acid? Which gene and transcript does it affect? The Frameshift and Wildtype plugins are added because pVACseq needs them.
 
 ```bash
 bash scripts/04_vep_annotation.sh
 ```
 
-### Step 6 — Neoantigen Prediction (pVACseq)
+### Step 6 -- Neoantigen Prediction (pVACseq)
 
 This is the core step. **pVACseq** takes the annotated mutations + HLA alleles and predicts which mutant peptides will bind strongly to the patient's MHC molecules. It runs two prediction algorithms:
 
-- **NetMHCpanEL** — eluted ligand predictor, the gold standard
-- **BigMHC_EL** — deep learning-based predictor
+- **NetMHCpanEL** -- eluted ligand predictor, the gold standard
+- **BigMHC_EL** -- deep learning-based predictor
 
 The pipeline tests all peptide lengths (8-11 amino acids) against all 5 HLA alleles, generating **29,031 peptide-MHC binding predictions**. These are filtered by binding percentile, and the top candidates are ranked.
 
@@ -108,7 +133,7 @@ The pipeline tests all peptide lengths (8-11 amino acids) against all 5 HLA alle
 bash scripts/05_pvacseq.sh
 ```
 
-**Result: 9 top neoantigens** — all in the top 0.03% of binding strength:
+**Result: 9 top neoantigens** -- all in the top 0.03% of binding strength:
 
 | Gene | Mutant Peptide | HLA Allele | Percentile | Tumor VAF | Expression |
 |------|---------------|------------|-----------|-----------|-----------|
@@ -128,9 +153,9 @@ bash scripts/05_pvacseq.sh
 
 ![Mutant vs wildtype peptide sequences](sample_output/figures/peptide.png)
 
-### Step 7 — 3D Structure Prediction (ColabFold / AlphaFold2)
+### Step 7 -- 3D Structure Prediction (ColabFold / AlphaFold2)
 
-For each neoantigen, **ColabFold** (AlphaFold2-Multimer) predicts the 3D structure of the peptide-MHC complex — how the mutant peptide physically sits in the MHC binding groove. This validates that the peptide actually fits.
+For each neoantigen, **ColabFold** (AlphaFold2-Multimer) predicts the 3D structure of the peptide-MHC complex -- how the mutant peptide physically sits in the MHC binding groove. This validates that the peptide actually fits.
 
 Each complex has 3 chains:
 - **Chain A:** HLA alpha chain (~275 residues)
@@ -155,19 +180,19 @@ We predicted all 9 complexes on Vast.ai (RTX 5080, ~3 hours, ~$0.36):
 
 27 PDB files generated (9 complexes x 3 models each).
 
-### Step 8 — mRNA Vaccine Design (LinearDesign)
+### Step 8 -- mRNA Vaccine Design (LinearDesign)
 
 Now we have validated neoantigens. **LinearDesign** (Nature, 2023) optimizes the mRNA coding sequence for maximum structural stability and translation efficiency, using lattice parsing from computational linguistics.
 
 The pipeline assembles a complete mRNA construct following the architecture of BioNTech's BNT162b2 COVID-19 vaccine:
 
 ```
-5'cap — 5'UTR (α-globin) — Kozak — tPA signal — [TLN2-AAY-TRPM7-AAY-...-ZNF548] — Stop — 3'UTR (AES+mtRNR1) — polyA (A30-linker-A70)
+5'cap -- 5'UTR (a-globin) -- Kozak -- tPA signal -- [TLN2-AAY-TRPM7-AAY-...-ZNF548] -- Stop -- 3'UTR (AES+mtRNR1) -- polyA (A30-linker-A70)
 ```
 
 | Element | Source | Length | Purpose |
 |---------|--------|--------|---------|
-| 5' UTR | Human α-globin | 34 nt | High translation efficiency |
+| 5' UTR | Human a-globin | 34 nt | High translation efficiency |
 | Kozak | GCCACC | 6 nt | Ribosome start codon recognition |
 | tPA signal peptide | Tissue plasminogen activator | 93 nt (31 aa) | Routes protein to ER for MHC loading |
 | 9 neoantigens | pVACseq top hits | variable | Vaccine antigens |
@@ -186,13 +211,13 @@ bash scripts/07_construct_design.sh
 - MFE: -279.7 kcal/mol (very stable)
 - CAI: 0.761 (good human codon usage)
 
-### Step 9 — Delivery (LNP Encapsulation)
+### Step 9 -- Delivery (LNP Encapsulation)
 
 The final mRNA sequence is ready for **in-vitro transcription** (IVT). During IVT:
-- All U nucleotides are replaced with **N1-methylpseudouridine (Ψ)** to reduce innate immune activation
+- All U nucleotides are replaced with **N1-methylpseudouridine** to reduce innate immune activation
 - **Cap1** structure is added co-transcriptionally
 
-The mRNA is then encapsulated in a **lipid nanoparticle** (LNP) for delivery — the same technology used in Moderna and Pfizer COVID-19 vaccines.
+The mRNA is then encapsulated in a **lipid nanoparticle** (LNP) for delivery -- the same technology used in Moderna and Pfizer COVID-19 vaccines.
 
 > **This step is done in a wet lab, not computationally.** The pipeline ends here with a ready-to-synthesize mRNA sequence. See [docs/WHAT_NEXT.md](docs/WHAT_NEXT.md) for detailed wet-lab next steps.
 
@@ -213,11 +238,8 @@ The pipeline generates publication-quality plots from the neoantigen predictions
 ![Chromosomal distribution of mutations](sample_output/figures/chromo.png)
 
 ```bash
-# Generate visualizations
 uv run python scripts/utils/visualize_neoantigens.py results/real_top10.tsv
 ```
-
-An interactive scrollytelling visualization of the full pipeline is at `results/vaccine_story.html` (serve via `python3 -m http.server`).
 
 ---
 
@@ -265,7 +287,7 @@ Runs in ~20 minutes on any machine with Docker (free). Vast.ai optional for spee
 
 | Step | Tool | Time | Vast.ai Cost |
 |------|------|------|-------------|
-| Download data | wget | 30 min | — |
+| Download data | wget | 30 min | -- |
 | Alignment | BWA-MEM | 8-10h | $0.96-1.20 |
 | Variant calling | Mutect2 | 4-6h | $0.48-0.72 |
 | HLA typing | OptiType | 15-30 min | $0.03-0.06 |
@@ -302,7 +324,7 @@ Works with any human tumor/normal pair on GRCh38.
 
 ---
 
-## Context
+## Clinical Context
 
 This pipeline replicates the computational approach used in real clinical programs:
 
@@ -343,77 +365,95 @@ personal-cancer-vaccine/
 └── results/                         # Pipeline output (gitignored)
 ```
 
+---
+
 ## TODO
 
 - [ ] RNA-seq integration (STAR + expression quantification)
 - [ ] MHC Class II predictions (CD4+ T-cell epitopes)
-- [ ] Fusion neoantigen detection (STAR-Fusion → pVACfuse)
+- [ ] Fusion neoantigen detection (STAR-Fusion -> pVACfuse)
 - [ ] HLA loss-of-heterozygosity detection
 - [ ] Immunogenicity prediction (BigMHC_IM)
 - [ ] Nextflow wrapper
 - [ ] Canine genome branch (CanFam4 + DLA alleles)
 
+---
+
 ## How This Was Built
 
-This entire pipeline was built in one night by someone with no biology background, using Claude Code in research mode. Here is what I searched for, read, and used to put this together -- in roughly the order I encountered it.
+This entire pipeline was built in one night by someone with no biology background, using Claude Code in research mode. Here is what I searched for, read, and used to put this together -- sorted by importance to the final result.
 
-**Starting point -- the Paul Conyngham story:**
-- [AI-Designed mRNA Vaccine Shrinks Dog's Cancer Tumor](https://awesomeagents.ai/news/ai-mrna-vaccine-dog-cancer-rosie/) -- this is what started it all
+### Core pipeline design
+
+These are the resources that directly shaped the architecture and code of this pipeline.
+
+- [griffithlab pVACtools Intro Course](https://github.com/griffithlab/pVACtools_Intro_Course) -- the single most important resource. Pre-processed HCC1395 data, step-by-step tutorial. Easy Mode is based entirely on this.
+- [Best practices for bioinformatic characterization of neoantigens for clinical utility](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-019-0666-2) -- Genome Medicine 2019. The definitive guide to neoantigen pipeline design. Defined the order of steps.
+- [pVACtools documentation](https://pvactools.readthedocs.io/) -- how to run pVACseq, what algorithms to use, what the output columns mean, how to filter results.
+- [GATK Best Practices for somatic variant calling](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels) -- Mutect2 tumor-normal workflow, contamination estimation, filtering.
+- [ImmunoNX: bioinformatics workflow for neoantigen vaccine trials](https://pmc.ncbi.nlm.nih.gov/articles/PMC12709488/) -- 2025 paper. Validated that our pipeline steps match what is used in actual clinical trials.
+- [OpenVax neoantigen vaccine pipeline](https://github.com/openvax/neoantigen-vaccine-pipeline) -- another open-source pipeline. Used for cross-referencing our approach.
+
+### mRNA vaccine construct design
+
+These sources defined how the final mRNA sequence is assembled -- UTRs, signal peptide, linkers, polyA.
+
+- [Detailed Dissection and Critical Evaluation of the Pfizer/BioNTech and Moderna mRNA Vaccines](https://pmc.ncbi.nlm.nih.gov/articles/PMC8310186/) -- reverse-engineered BNT162b2 structure. This is where the 5'UTR, 3'UTR, and polyA design comes from.
+- [Reverse Engineering the source code of the BioNTech/Pfizer SARS-CoV-2 Vaccine](https://berthub.eu/articles/posts/reverse-engineering-source-code-of-the-biontech-pfizer-vaccine/) -- Bert Hubert's blog post. Made the BNT162b2 architecture understandable.
+- [BioNTech coronavirus vaccine patent WO2021213945A1](https://patents.google.com/patent/WO2021213945A1/en) -- actual patent with sequence details for UTRs and polyA.
+- [Optimized polyepitope neoantigen DNA vaccines](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-021-00872-4) -- AAY linkers, polyepitope design, furin cleavage sites. Confirmed that AAY linkers work and furin sites are optional.
+- [Algorithm for optimized mRNA design improves stability and immunogenicity](https://www.nature.com/articles/s41586-023-06127-z) -- LinearDesign Nature paper. 128x improvement in antibody response.
+- [LinearDesign GitHub](https://github.com/LinearDesignSoftware/LinearDesign) -- the tool we used for mRNA codon optimization.
+- [tPA signal sequence enhances immunogenicity of mRNA vaccines](https://link.springer.com/article/10.1186/s12951-024-02488-3) -- why we chose tPA as the signal peptide.
+- [Modifications of mRNA vaccine structural elements for improving stability and translation](https://link.springer.com/article/10.1007/s13273-021-00171-4) -- why each structural element matters.
+- [Evaluation of synthetic mRNA with selected UTR sequences and alternative poly(A) tail](https://pmc.ncbi.nlm.nih.gov/articles/PMC12355064/) -- 2025 paper on UTR optimization and segmented polyA.
+- [Poly(A) tail with loop structure enhances translation](https://www.nature.com/articles/s41541-025-01287-7) -- npj Vaccines 2025.
+- [mRNA-LNP vaccines combined with tPA signal sequences](https://journals.asm.org/doi/10.1128/msphere.00775-24) -- mSphere 2024.
+
+### Clinical evidence that this approach works
+
+These papers and press releases show that the same computational approach is being used in real clinical trials with real results.
+
+- [Moderna V940 KEYNOTE-942: 3-year data](https://www.merck.com/news/moderna-merck-announce-3-year-data-for-mrna-4157-v940-in-combination-with-keytruda-pembrolizumab-demonstrated-sustained-improvement-in-recurrence-free-survival-distant-metastasis-free-su/) -- 49% reduction in melanoma recurrence. Phase 3 ongoing.
+- [Moderna V940: 5-year follow-up](https://www.targetedonc.com/view/rfs-benefit-sustained-at-5-years-for-intismeran-autogene-in-melanoma) -- benefit sustained at 5 years.
+- [BioNTech BNT122: 3-year pancreatic cancer data](https://investors.biontech.de/news-releases/news-release-details/three-year-phase-1-follow-data-mrna-based-individualized) -- 6/8 responders disease-free at 3 years.
+- [Dana-Farber NeoVaxMI results](https://www.dana-farber.org/newsroom/news-releases/2025/modified-personalized-cancer-vaccine-generates-powerful-immune-response) -- 9/9 patients showed T-cell response.
+- [Neoantigen DNA vaccines in triple-negative breast cancer patients](https://link.springer.com/article/10.1186/s13073-024-01388-3) -- Genome Medicine 2024. Directly relevant to HCC1395 (also TNBC).
+
+### Immunology background
+
+These helped me understand why neoantigens work as vaccine targets and what makes a good candidate.
+
+- [Personalized neoantigen cancer vaccines: current progression, challenges and a bright future](https://pmc.ncbi.nlm.nih.gov/articles/PMC11427492/) -- comprehensive overview of the field.
+- [Advances in the development of personalized neoantigen therapies](https://rupress.org/jem/article/223/2/e20241234/278560/) -- Journal of Experimental Medicine 2025.
+- [Designing neoantigen cancer vaccines, trials, and outcomes](https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1105420/full) -- Frontiers in Immunology.
+- [Computational biology and AI in mRNA vaccine design for cancer immunotherapy](https://www.frontiersin.org/journals/cellular-and-infection-microbiology/articles/10.3389/fcimb.2024.1501010/full) -- Frontiers 2024.
+
+### Structure prediction
+
+- [ColabFold: making protein folding accessible to all](https://www.nature.com/articles/s41592-022-01488-1) -- Nature Methods 2022.
+- [ColabFold GitHub](https://github.com/sokrypton/ColabFold) -- how to predict peptide-MHC structures, VRAM requirements.
+
+### GPU and cloud compute
+
+- [Vast.ai](https://vast.ai) -- where we ran everything ($0.12/hr for RTX 5080).
+- [NVIDIA Clara Parabricks](https://www.nvidia.com/en-us/clara/parabricks/) -- GPU-accelerated variant calling. We did not use it, CPU was fine.
+
+### Demo data
+
+- [HCC1395 on Cellosaurus](https://www.cellosaurus.org/CVCL_1249) -- triple-negative breast cancer, ~8 mut/Mb, known HLA alleles.
+- [griffithlab pVACtools course data](https://github.com/griffithlab/pVACtools_Intro_Course) -- pre-processed VCF, HLA types, expression data.
+- [ENA ERR194146 / ERR194147](https://www.ebi.ac.uk/ena/) -- raw FASTQ files for HCC1395 and HCC1395BL.
+
+### The starting point
+
+- [AI-Designed mRNA Vaccine Shrinks Dog's Cancer Tumor](https://awesomeagents.ai/news/ai-mrna-vaccine-dog-cancer-rosie/) -- the Paul Conyngham story that started this whole thing.
 - [Tech entrepreneur uses ChatGPT to create personalised cancer vaccine for his dog](https://papalinc.com/tech-entrepreneur-uses-chatgpt-to-create-a-personalised-cancer-vaccine-for-his-dog-and-the-breakthrough-could-soon-help-humans-too/)
-- Read every article about what he actually did: sequencing, ChatGPT for planning, AlphaFold for structure, UNSW for mRNA synthesis
-
-**Learning the bioinformatics pipeline:**
-- [griffithlab pVACtools Intro Course](https://github.com/griffithlab/pVACtools_Intro_Course) -- the single most important resource. Pre-processed HCC1395 data, step-by-step tutorial, this is what Easy Mode is based on
-- [pVACtools documentation](https://pvactools.readthedocs.io/) -- how to run pVACseq, what algorithms to use, what the output means
-- [GATK Best Practices for somatic variant calling](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels) -- Mutect2 tumor-normal workflow
-- [Best practices for bioinformatic characterization of neoantigens for clinical utility](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-019-0666-2) -- Genome Medicine 2019, the definitive guide to neoantigen pipeline design
-- [OpenVax neoantigen vaccine pipeline](https://github.com/openvax/neoantigen-vaccine-pipeline) -- another open-source pipeline, used for reference
-- [ImmunoNX: bioinformatics workflow for neoantigen vaccine trials](https://pmc.ncbi.nlm.nih.gov/articles/PMC12709488/) -- 2025 paper, validated the order of our pipeline steps
-
-**Understanding the immunology:**
-- [Personalized neoantigen cancer vaccines: current progression, challenges and a bright future](https://pmc.ncbi.nlm.nih.gov/articles/PMC11427492/) -- overview of the field
-- [Advances in the development of personalized neoantigen therapies](https://rupress.org/jem/article/223/2/e20241234/278560/) -- Journal of Experimental Medicine 2025
-- [Designing neoantigen cancer vaccines, trials, and outcomes](https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2023.1105420/full) -- Frontiers in Immunology
-
-**Clinical trial results that prove this works:**
-- [Moderna V940 KEYNOTE-942: 3-year data](https://www.merck.com/news/moderna-merck-announce-3-year-data-for-mrna-4157-v940-in-combination-with-keytruda-pembrolizumab-demonstrated-sustained-improvement-in-recurrence-free-survival-distant-metastasis-free-su/) -- 49% reduction in melanoma recurrence
-- [Moderna V940: 5-year follow-up](https://www.targetedonc.com/view/rfs-benefit-sustained-at-5-years-for-intismeran-autogene-in-melanoma) -- benefit sustained
-- [BioNTech BNT122: 3-year pancreatic cancer data](https://investors.biontech.de/news-releases/news-release-details/three-year-phase-1-follow-data-mrna-based-individualized) -- 6/8 responders disease-free
-- [Dana-Farber NeoVaxMI results](https://www.dana-farber.org/newsroom/news-releases/2025/modified-personalized-cancer-vaccine-generates-powerful-immune-response) -- 9/9 patients showed T-cell response
-- [Neoantigen DNA vaccines in triple-negative breast cancer patients](https://link.springer.com/article/10.1186/s13073-024-01388-3) -- Genome Medicine 2024
-
-**mRNA vaccine design -- how to actually build the construct:**
-- [Detailed Dissection and Critical Evaluation of the Pfizer/BioNTech and Moderna mRNA Vaccines](https://pmc.ncbi.nlm.nih.gov/articles/PMC8310186/) -- reverse-engineered BNT162b2 structure, this is where the 5'UTR, 3'UTR, and polyA design comes from
-- [Reverse Engineering the source code of the BioNTech/Pfizer SARS-CoV-2 Vaccine](https://berthub.eu/articles/posts/reverse-engineering-source-code-of-the-biontech-pfizer-vaccine/) -- Bert Hubert's legendary blog post
-- [BioNTech coronavirus vaccine patent WO2021213945A1](https://patents.google.com/patent/WO2021213945A1/en) -- actual patent with sequence details
-- [Modifications of mRNA vaccine structural elements for improving stability and translation](https://link.springer.com/article/10.1007/s13273-021-00171-4) -- why each element matters
-- [Evaluation of synthetic mRNA with selected UTR sequences and alternative poly(A) tail](https://pmc.ncbi.nlm.nih.gov/articles/PMC12355064/) -- 2025 paper on UTR optimization
-- [Poly(A) tail with loop structure enhances translation](https://www.nature.com/articles/s41541-025-01287-7) -- npj Vaccines 2025
-- [Optimized polyepitope neoantigen DNA vaccines](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-021-00872-4) -- AAY linkers, polyepitope design, furin cleavage sites
-
-**LinearDesign -- mRNA sequence optimization:**
-- [Algorithm for optimized mRNA design improves stability and immunogenicity](https://www.nature.com/articles/s41586-023-06127-z) -- Nature 2023, 128x improvement in antibody response
-- [LinearDesign GitHub](https://github.com/LinearDesignSoftware/LinearDesign) -- the actual tool
-
-**Structure prediction:**
-- [ColabFold: making protein folding accessible to all](https://www.nature.com/articles/s41592-022-01488-1) -- Nature Methods 2022
-- [AlphaFold2-Multimer for peptide-MHC complexes](https://github.com/sokrypton/ColabFold) -- how to predict peptide-MHC structures
-
-**GPU and cloud compute:**
-- [Vast.ai](https://vast.ai) -- where we ran everything
-- [ColabFold GPU VRAM requirements](https://github.com/sokrypton/ColabFold) -- ~16GB for ~400 residue complexes
-- [NVIDIA Clara Parabricks](https://www.nvidia.com/en-us/clara/parabricks/) -- GPU-accelerated variant calling (we didn't use it, CPU was fine)
-
-**Demo data:**
-- [HCC1395 on Cellosaurus](https://www.cellosaurus.org/CVCL_1249) -- triple-negative breast cancer, ~8 mut/Mb
-- [griffithlab pVACtools course data](https://github.com/griffithlab/pVACtools_Intro_Course) -- pre-processed VCF, HLA types, expression data
-- [ENA ERR194146 / ERR194147](https://www.ebi.ac.uk/ena/) -- raw FASTQ files
-
-**tPA signal peptide:**
-- [tPA signal sequence enhances immunogenicity of mRNA vaccines](https://link.springer.com/article/10.1186/s12951-024-02488-3) -- Journal of Nanobiotechnology 2024
-- [mRNA-LNP vaccines combined with tPA signal sequences](https://journals.asm.org/doi/10.1128/msphere.00775-24) -- mSphere 2024
+- [DIY mRNA Cancer Vaccine with ChatGPT and AlphaFold: 2026 Analysis](https://blockchain.news/ainews/diy-mrna-cancer-vaccine-with-chatgpt-and-alphafold-2026-analysis-on-costs-workflow-and-risks) -- cost and workflow analysis.
 
 Everything above is what Claude Code searched, read, and synthesized to build this pipeline. I asked questions, it found papers, I asked more questions, it wrote code, I ran it, it broke, we fixed it. Repeat for ~12 hours.
+
+---
 
 ## Tool References
 
