@@ -12,7 +12,9 @@ He spent 3 months writing a 100-page ethics application just to get permission t
 
 That story made me stay up all night asking Claude Code questions, running searches, reading papers, and building this pipeline from scratch. If one person with ChatGPT and determination can do this for a dog, what happens when you make the entire computational pipeline open-source, reproducible, and runnable for $1 on a rented GPU?
 
-This repo is the answer. Everything from raw tumor DNA to a ready-to-synthesize mRNA vaccine sequence, automated and documented.
+This repo is the result. Everything from raw tumor DNA to a ready-to-synthesize mRNA vaccine sequence, automated and documented.
+
+I have no background in biology or medicine. I do not know how correct any of this is. The pipeline was built in one night by asking Claude Code to research, code, and run everything. If you are a bioinformatician, immunologist, or anyone who actually knows this field -- please look at this and tell me what is wrong, what is missing, and what is dangerous. Open an issue, submit a PR, or just roast me. I would rather be corrected than be confidently wrong about something this important.
 
 Sources on Paul Conyngham and Rosie:
 - [AI-Designed mRNA Vaccine Shrinks Dog's Cancer Tumor](https://awesomeagents.ai/news/ai-mrna-vaccine-dog-cancer-rosie/)
