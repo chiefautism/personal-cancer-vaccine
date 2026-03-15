@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" width="200" alt="Personal Cancer Vaccine Pipeline">
+</p>
+
 # Personal Cancer Vaccine Pipeline
 
 > **DISCLAIMER: This is a research and educational project. It is NOT a medical product, NOT clinically validated, and NOT approved for use in humans or animals. This pipeline produces computational predictions only -- it does not manufacture, test, or administer any vaccine. Do not use this software to make medical decisions. Any therapeutic application requires extensive wet-lab validation, preclinical testing, regulatory approval, and clinical oversight by qualified medical professionals. The authors assume no liability for any use of this software.**
