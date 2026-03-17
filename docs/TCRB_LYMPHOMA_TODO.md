@@ -1,4 +1,4 @@
-# TCR002361 Follicular Lymphoma — Next Run
+# TCR002361 Follicular Lymphoma — Full Pipeline Run (In Progress)
 
 ## Dataset
 
@@ -55,11 +55,39 @@ This is the FULL pipeline from raw FASTQ — no pre-processed data:
 - Time: ~12-16 hours total
 - Cost: ~$1.50-2.00 on Vast.ai at $0.12/hr
 
-## What Went Wrong
+## Current Progress (Vast.ai Instance #32933987, Denmark)
 
-- fasterq-dump failed with DNS error: `connection not found while validating within network system module`
-- SSH connections becoming unstable after 8+ hours on same instance
-- Consider fresh instance for this run
+| Step | Status | Time | Result |
+|------|--------|------|--------|
+| FASTQ download | DONE | 7 min | 14GB (4 files from ENA FTP) |
+| Reference download | DONE | 1 min | 4.4GB (Ensembl GRCh38) |
+| BWA index | DONE | 35 min | 2.9GB index |
+| BWA alignment (tumor) | DONE | 32 min | 8.4GB BAM, 118.5M reads |
+| BWA alignment (normal) | DONE | 30 min | 8.1GB BAM |
+| GATK Mutect2 | DONE | 4h | **9,435 PASS variants** (29,043 total, 9,352 SNV + 83 indel) |
+| HLA typing | PLACEHOLDER | - | Using common alleles, need OptiType |
+| VEP annotation | BLOCKED | - | Perl VEP needs Bio::EnsEMBL (Docker easiest) |
+| pVACseq | WAITING | - | Needs VEP-annotated VCF |
+| MHCflurry | FIXED | - | TF 2.15.1 downgrade works |
+
+### Blockers
+
+**VEP annotation** is the only remaining blocker. Options:
+1. Use Docker: `docker run ensemblorg/ensembl-vep:release_113.0 vep ...` (needs Docker on host)
+2. Fresh instance with Docker support (not all Vast.ai hosts have Docker-in-Docker)
+3. Use Ensembl VEP web tool (upload VCF, max 50MB, our file is 2.6MB compressed -- fits)
+4. Install VEP via full perl INSTALL.pl with --AUTO acfp (downloads all deps + cache, ~15GB)
+
+### What Went Wrong
+
+- fasterq-dump failed with DNS error on first instance
+- First Vast.ai instance had 0 MB/s GitHub download speed
+- GATK 4.6.1.0 requires Java 17 (apt default was Java 11)
+- Ensembl reference uses chr names 1,2,3 not chr1,chr2,chr3
+- conda install ensembl-vep hangs for 1+ hour solving environment
+- VEP perl install needs Bio::EnsEMBL::Registry (full Ensembl API)
+- SSH unstable on overloaded hosts (load avg 48)
+- MHCflurry fixed by pinning TF 2.15.1
 
 ## All TCRB Patients Available
 
